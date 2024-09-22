@@ -8,7 +8,7 @@ import {MockERC20} from "test/mocks/MockERC20.sol";
 contract TestProtectedTransactions is Test {
     ProtectedTransactions public protectedTransactions = new ProtectedTransactions();
 
-    address public jaxon = address(0x1);
+    address payable jaxon = payable(address(0x10));
     address public lockett = address(0x2);
     address public dk = address(0x3);
 
@@ -20,12 +20,12 @@ contract TestProtectedTransactions is Test {
         baseToken = new MockERC20("Juan", "JUAN");
         baseTokeern = new MockERC20("Carlos", "CARLOS");
 
-        //delete next four lines
-        vm.deal(jaxon, 1 ether);
-        vm.deal(lockett, 1 ether);
+        // //delete next four lines
+        // vm.deal(jaxon, 1 ether);
+        // vm.deal(lockett, 1 ether);
 
-        baseToken.mint(jaxon, 1000);
-        baseToken.mint(lockett, 1000);
+        // baseToken.mint(jaxon, 1000);
+        // baseToken.mint(lockett, 1000);
     }
 
     function testSendEth(uint256 amount, string calldata secret) public {
@@ -40,6 +40,8 @@ contract TestProtectedTransactions is Test {
     }
 
     function testCancelSendEth(uint256 amount, string calldata secret) public {
+        vm.assume(amount < type(uint64).max);
+
         vm.deal(jaxon, amount);
 
         vm.prank(jaxon);
@@ -58,12 +60,15 @@ contract TestProtectedTransactions is Test {
         assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), amount);
 
         //correct cancel tx should work
+        // Check that transaction mapping stores 0 noe and check that sender is refunded
         protectedTransactions.cancelSendEth(lockett, secret);
         assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), 0);
+        assertEq(address(jaxon).balance, amount);
 
         //cancel tx twice shouldn't do anything
         protectedTransactions.cancelSendEth(lockett, secret);
         assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), 0);
+        assertEq(address(jaxon).balance, amount);
 
         vm.stopPrank();
 
@@ -157,8 +162,10 @@ contract TestProtectedTransactions is Test {
         assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), amount);
 
         //correct cancel tx should work
+        assert(baseToken.balanceOf(jaxon) == 0);
         protectedTransactions.cancelSendToken(lockett, secret, address(baseToken));
         assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), 0);
+        assertEq(baseToken.balanceOf(jaxon), amount);
 
         //cancel tx twice shouldn't do anything
         protectedTransactions.cancelSendToken(lockett, secret, address(baseToken));

@@ -31,6 +31,7 @@ contract ProtectedTransactions {
     }
 
     function cancelSendEth(address _to, string calldata _secret) public {
+        payable(msg.sender).transfer(transactions[keccak256(abi.encodePacked(msg.sender, _to, _secret))]);
         transactions[keccak256(abi.encodePacked(msg.sender, _to, _secret))] = 0;
     }
 
@@ -43,10 +44,7 @@ contract ProtectedTransactions {
     function sendToken(address _to, uint256 _amount, string calldata _secret, address _tokenAddress) public 
     {
         // Transfer tokens from the sender to this contract
-        require(
-            ERC20(_tokenAddress).transferFrom(msg.sender, address(this), _amount),
-            "Token transfer failed"
-        );
+        ERC20(_tokenAddress).safeTransferFrom(msg.sender, address(this), _amount);
 
         //update transactions
         transactions[keccak256(abi.encodePacked(msg.sender, _to, _secret, _tokenAddress))] += _amount;
