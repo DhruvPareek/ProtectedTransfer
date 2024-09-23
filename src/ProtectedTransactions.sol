@@ -25,6 +25,14 @@ contract ProtectedTransactions {
     event TokenTxCreated(address _from, address _to, bytes32 _secret, address _tokenAddress);
     event EthTxCreated(address _from, address _to, bytes32 _secret);
 
+    function viewTokenTransaction(address _from, address _to, string calldata _secret, address _tokenAddress) public view returns (uint256) {
+        return transactions[keccak256(abi.encodePacked(_from, _to, _secret, _tokenAddress))];
+    }
+
+    function viewEthTransaction(address _from, address _to, string calldata _secret) public view returns (uint256) {
+        return transactions[keccak256(abi.encodePacked(_from, _to, _secret))];
+    }
+
     function sendEth(address _to, string calldata _secret) public payable {
         transactions[keccak256(abi.encodePacked(msg.sender, _to, _secret))] += msg.value;
         emit EthTxCreated(msg.sender, _to, keccak256(abi.encodePacked(_secret)));

@@ -28,6 +28,31 @@ contract TestProtectedTransactions is Test {
         // baseToken.mint(lockett, 1000);
     }
 
+    function testViewTokenTransaction(uint256 amount, string calldata secret) public {
+        vm.assume(amount < type(uint128).max);
+
+        baseToken.mint(jaxon, amount);
+
+        vm.startPrank(jaxon);
+
+        baseToken.approve(address(protectedTransactions), amount);
+        protectedTransactions.sendToken(lockett, amount, secret, address(baseToken));
+        assertEq(protectedTransactions.viewTokenTransaction(jaxon, lockett, secret, address(baseToken)), amount);
+
+        vm.stopPrank();
+    }
+
+    function testViewEthTransaction(uint256 amount, string calldata secret) public {
+        vm.deal(jaxon, amount);
+
+        vm.startPrank(jaxon);
+
+        protectedTransactions.sendEth{value: amount}(lockett, secret);
+        assertEq(protectedTransactions.viewEthTransaction(jaxon, lockett, secret), amount);
+
+        vm.stopPrank();
+    }
+
     function testSendEth(uint256 amount, string calldata secret) public {
         vm.deal(jaxon, amount);
 
