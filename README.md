@@ -1,4 +1,4 @@
-# ProtectedTransfer
+# SafeTransactions
 Transfer eth or tokens from one address to another in a protected manner. This contract is helpful to prevent burning tokens to the wrong address during a transaction. A sender creates a transaction with a secret, then only the intended recipient can claim the eth or tokens from the transaction.
 
 A sender can call the sendEth() function with the intended recipient's address and a secret string. The sender should then share this secret string with the intended recipient. The recipient can claim the eth from the transaction by calling the claimEth() function with the sender's address and the secret string.
