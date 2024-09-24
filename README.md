@@ -8,3 +8,5 @@ If the sender accidentally directed the transaction to the wrong address, they c
 An incorrecty addressed recipient will not be able to claim your tokens. Since only the sender and the intended recipient should know the secret, it is impossible for anyone else to claim the eth. The misdirected eth will sit in the smart contract until the original sender cancels the transaction.
 
 This smart contract also supports the same functionality for ERC20 tokens with the functions sendToken, cancelSendToken, claimToken. All of these functions also require the ERC20's contract address as a parameter.
+
+Frontend --> 
