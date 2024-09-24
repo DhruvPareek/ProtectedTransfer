@@ -18,7 +18,7 @@ import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 
 
-contract ProtectedTransactions {
+contract SafeTransactions {
     using SafeTransferLib for ERC20;
     mapping(bytes32 => uint256) public transactions;
 

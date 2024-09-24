@@ -2,11 +2,11 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {ProtectedTransactions} from "../src/ProtectedTransactions.sol";
+import {SafeTransactions} from "../src/SafeTransactions.sol";
 import {MockERC20} from "test/mocks/MockERC20.sol";
 
-contract TestProtectedTransactions is Test {
-    ProtectedTransactions public protectedTransactions = new ProtectedTransactions();
+contract TestSafeTransactions is Test {
+    SafeTransactions public safeTransactions = new SafeTransactions();
 
     address payable jaxon = payable(address(0x10));
     address public lockett = address(0x2);
@@ -16,7 +16,7 @@ contract TestProtectedTransactions is Test {
    MockERC20 public baseTokeern;
 
     function setUp() public {
-        protectedTransactions = new ProtectedTransactions();
+        safeTransactions = new SafeTransactions();
         baseToken = new MockERC20("Juan", "JUAN");
         baseTokeern = new MockERC20("Carlos", "CARLOS");
 
@@ -35,9 +35,9 @@ contract TestProtectedTransactions is Test {
 
         vm.startPrank(jaxon);
 
-        baseToken.approve(address(protectedTransactions), amount);
-        protectedTransactions.sendToken(lockett, amount, secret, address(baseToken));
-        assertEq(protectedTransactions.viewTokenTransaction(jaxon, lockett, secret, address(baseToken)), amount);
+        baseToken.approve(address(safeTransactions), amount);
+        safeTransactions.sendToken(lockett, amount, secret, address(baseToken));
+        assertEq(safeTransactions.viewTokenTransaction(jaxon, lockett, secret, address(baseToken)), amount);
 
         vm.stopPrank();
     }
@@ -47,8 +47,8 @@ contract TestProtectedTransactions is Test {
 
         vm.startPrank(jaxon);
 
-        protectedTransactions.sendEth{value: amount}(lockett, secret);
-        assertEq(protectedTransactions.viewEthTransaction(jaxon, lockett, secret), amount);
+        safeTransactions.sendEth{value: amount}(lockett, secret);
+        assertEq(safeTransactions.viewEthTransaction(jaxon, lockett, secret), amount);
 
         vm.stopPrank();
     }
@@ -58,8 +58,8 @@ contract TestProtectedTransactions is Test {
 
         vm.startPrank(jaxon);
 
-        protectedTransactions.sendEth{value: amount}(lockett, secret);
-        assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), amount);
+        safeTransactions.sendEth{value: amount}(lockett, secret);
+        assertEq(safeTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), amount);
 
         vm.stopPrank();
     }
@@ -70,29 +70,29 @@ contract TestProtectedTransactions is Test {
         vm.deal(jaxon, amount);
 
         vm.prank(jaxon);
-        protectedTransactions.sendEth{value: amount}(lockett, secret);
+        safeTransactions.sendEth{value: amount}(lockett, secret);
 
         //non tx creator can't cancel someone else's tx
         vm.startPrank(lockett);
-        protectedTransactions.cancelSendEth(lockett, secret);
-        assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), amount);
+        safeTransactions.cancelSendEth(lockett, secret);
+        assertEq(safeTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), amount);
         vm.stopPrank();
 
         vm.startPrank(jaxon);
 
         //cancel tx with different secret shouldn't affect original tx
-        protectedTransactions.cancelSendEth(lockett, "secret1");
-        assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), amount);
+        safeTransactions.cancelSendEth(lockett, "secret1");
+        assertEq(safeTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), amount);
 
         //correct cancel tx should work
         // Check that transaction mapping stores 0 noe and check that sender is refunded
-        protectedTransactions.cancelSendEth(lockett, secret);
-        assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), 0);
+        safeTransactions.cancelSendEth(lockett, secret);
+        assertEq(safeTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), 0);
         assertEq(address(jaxon).balance, amount);
 
         //cancel tx twice shouldn't do anything
-        protectedTransactions.cancelSendEth(lockett, secret);
-        assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), 0);
+        safeTransactions.cancelSendEth(lockett, secret);
+        assertEq(safeTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret))), 0);
         assertEq(address(jaxon).balance, amount);
 
         vm.stopPrank();
@@ -101,7 +101,7 @@ contract TestProtectedTransactions is Test {
 
         //claiming tx after cancel should not work
         uint256 balance = address(jaxon).balance;
-        protectedTransactions.claimEth(jaxon, secret);
+        safeTransactions.claimEth(jaxon, secret);
         uint256 balance2 = address(jaxon).balance;
         assertEq(balance, balance2);
 
@@ -116,13 +116,13 @@ contract TestProtectedTransactions is Test {
         vm.prank(jaxon);
 
         // payable(address(0x0)).transfer(1 ether);
-        protectedTransactions.sendEth{value: amount}(lockett, secret);
+        safeTransactions.sendEth{value: amount}(lockett, secret);
 
         vm.startPrank(dk);
 
         //wrong receiver shohuld not be able to claim tx
         uint256 balance = address(dk).balance;
-        protectedTransactions.claimEth(jaxon, secret);
+        safeTransactions.claimEth(jaxon, secret);
         uint256 balance2 = address(dk).balance;
         assertEq(balance, balance2);
 
@@ -132,13 +132,13 @@ contract TestProtectedTransactions is Test {
 
         //wrong secret should not be able to claim tx
         balance = address(lockett).balance;
-        protectedTransactions.claimEth(jaxon, "tokern");
+        safeTransactions.claimEth(jaxon, "tokern");
         balance2 = address(lockett).balance;
         assertEq(balance, balance2);
 
         //correct claim should work
         balance = address(lockett).balance;
-        protectedTransactions.claimEth(jaxon, secret);
+        safeTransactions.claimEth(jaxon, secret);
         balance2 = address(lockett).balance;
         assertEq(balance, balance2 - amount);
 
@@ -152,12 +152,12 @@ contract TestProtectedTransactions is Test {
 
         vm.startPrank(jaxon);
 
-        baseToken.approve(address(protectedTransactions), 2*amount);
-        protectedTransactions.sendToken(lockett, amount, secret, address(baseToken));
-        assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), amount);
+        baseToken.approve(address(safeTransactions), 2*amount);
+        safeTransactions.sendToken(lockett, amount, secret, address(baseToken));
+        assertEq(safeTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), amount);
 
-        protectedTransactions.sendToken(lockett, amount, secret, address(baseToken));
-        assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), 2*amount);
+        safeTransactions.sendToken(lockett, amount, secret, address(baseToken));
+        assertEq(safeTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), 2*amount);
 
         vm.stopPrank();
     }
@@ -167,34 +167,34 @@ contract TestProtectedTransactions is Test {
         baseToken.mint(jaxon, amount);
 
         vm.startPrank(jaxon);
-        baseToken.approve(address(protectedTransactions), amount);
-        protectedTransactions.sendToken(lockett, amount, secret, address(baseToken));
+        baseToken.approve(address(safeTransactions), amount);
+        safeTransactions.sendToken(lockett, amount, secret, address(baseToken));
         vm.stopPrank();
 
         //non tx creator can't cancel someone else's tx
         vm.prank(lockett);
-        protectedTransactions.cancelSendToken(lockett, secret, address(baseToken));
-        assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), amount);
+        safeTransactions.cancelSendToken(lockett, secret, address(baseToken));
+        assertEq(safeTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), amount);
 
         vm.startPrank(jaxon);
 
         //cancel tx with wrong tokena address shouldn't affect original tx
-        protectedTransactions.cancelSendToken(lockett, secret, address(baseTokeern));
-        assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), amount);
+        safeTransactions.cancelSendToken(lockett, secret, address(baseTokeern));
+        assertEq(safeTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), amount);
 
         //cancel tx with different secret shouldn't affect original tx
-        protectedTransactions.cancelSendToken(lockett, "secret1", address(baseToken));
-        assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), amount);
+        safeTransactions.cancelSendToken(lockett, "secret1", address(baseToken));
+        assertEq(safeTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), amount);
 
         //correct cancel tx should work
         assert(baseToken.balanceOf(jaxon) == 0);
-        protectedTransactions.cancelSendToken(lockett, secret, address(baseToken));
-        assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), 0);
+        safeTransactions.cancelSendToken(lockett, secret, address(baseToken));
+        assertEq(safeTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), 0);
         assertEq(baseToken.balanceOf(jaxon), amount);
 
         //cancel tx twice shouldn't do anything
-        protectedTransactions.cancelSendToken(lockett, secret, address(baseToken));
-        assertEq(protectedTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), 0);
+        safeTransactions.cancelSendToken(lockett, secret, address(baseToken));
+        assertEq(safeTransactions.transactions(keccak256(abi.encodePacked(jaxon, lockett, secret, address(baseToken)))), 0);
 
         vm.stopPrank();
 
@@ -202,7 +202,7 @@ contract TestProtectedTransactions is Test {
 
         //claiming tx after cancel should not work
         uint256 balance = baseToken.balanceOf(jaxon);
-        protectedTransactions.claimToken(jaxon, secret, address(baseToken));
+        safeTransactions.claimToken(jaxon, secret, address(baseToken));
         uint256 balance2 = baseToken.balanceOf(jaxon);
         assertEq(balance, balance2);
 
@@ -214,15 +214,15 @@ contract TestProtectedTransactions is Test {
         baseToken.mint(jaxon, amount);
 
         vm.startPrank(jaxon);
-        baseToken.approve(address(protectedTransactions), amount);
-        protectedTransactions.sendToken(lockett, amount, secret, address(baseToken));
+        baseToken.approve(address(safeTransactions), amount);
+        safeTransactions.sendToken(lockett, amount, secret, address(baseToken));
         vm.stopPrank();
 
         vm.startPrank(dk);
 
         //wrong receiver shohuld not be able to claim tx
         uint256 balance = baseToken.balanceOf(dk);
-        protectedTransactions.claimToken(jaxon, secret, address(baseToken));
+        safeTransactions.claimToken(jaxon, secret, address(baseToken));
         uint256 balance2 = baseToken.balanceOf(dk);
         assertEq(balance, balance2);
         vm.stopPrank();
@@ -231,19 +231,19 @@ contract TestProtectedTransactions is Test {
 
         //wrong secret should not be able to claim tx
         balance = baseToken.balanceOf(lockett);
-        protectedTransactions.claimToken(jaxon, "tokern", address(baseToken));
+        safeTransactions.claimToken(jaxon, "tokern", address(baseToken));
         balance2 = baseToken.balanceOf(lockett);
         assertEq(balance, balance2);
 
         //wrong token address should not be able to claim tx
         balance = baseToken.balanceOf(lockett);
-        protectedTransactions.claimToken(jaxon, secret, address(baseTokeern));
+        safeTransactions.claimToken(jaxon, secret, address(baseTokeern));
         balance2 = baseToken.balanceOf(lockett);
         assertEq(balance, balance2);
 
         //correct claim should work
         balance = baseToken.balanceOf(lockett);
-        protectedTransactions.claimToken(jaxon, secret, address(baseToken));
+        safeTransactions.claimToken(jaxon, secret, address(baseToken));
         balance2 = baseToken.balanceOf(lockett);
         assertEq(balance + amount, balance2);
 
