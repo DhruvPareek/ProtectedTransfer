@@ -10,3 +10,4 @@ An incorrecty addressed recipient will not be able to claim your tokens. Since o
 This smart contract also supports the same functionality for ERC20 tokens with the functions sendToken, cancelSendToken, claimToken. All of these functions also require the ERC20's contract address as a parameter.
 
 Frontend --> https://safe-transactions-frontend-ib2v.vercel.app/
+Frontend Code --> https://github.com/DhruvPareek/safe_transactions_frontend
